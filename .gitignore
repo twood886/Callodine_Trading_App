@@ -8,9 +8,14 @@
 .Renviron.*
 node_modules
 
-renv/
+renv/library/
+renv/staging/
+renv/python/
 dist/
 build/
 out/
 R-Portable/
 node_modules/
+
+latest.yml
+app-update.yml
