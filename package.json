@@ -1,5 +1,5 @@
 {
-  "name": "Callodine Trading App",
+  "name": "CallodineTradingApp",
   "version": "0.1.0",
   "description": "Callodine Trading Application",
   "main": "main.js",
@@ -14,7 +14,7 @@
   },
   "build": {
     "appId": "com.callodine.tradingapp",
-    "productName": "Callodine Trading App",
+    "productName": "CallodineTradingApp",
     "publish": [
       {
         "provider": "github",
