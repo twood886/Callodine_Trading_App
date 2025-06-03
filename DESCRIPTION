@@ -1,0 +1,36 @@
+Package: CallodineTradingApp
+Type: Package
+Title:  Desktop Wrapper for the Rhino/Shiny Callodine Trading App
+Version: 0.1.0
+Authors@R: 
+    person(
+      given = "Taylor",
+      family = "Wood",
+      email  = "twood@callodine.com",
+      role   = c("aut", "cre")
+    )
+Description: A Rhino/Shiny portfolio‐management app packaged as an Electron desktop application.
+Depends: 
+    R (>= 4.0)
+Imports: 
+    shiny,
+    rhino,
+    shiny.semantic,
+    shinyjs,
+    SMAManager,
+    waiter,
+    dplyr,
+    magrittr,
+    plotly,
+    purrr,
+    scales,
+    stats,
+    tidyr,
+    config
+Remotes:
+  twood886/SMA_Manager
+  twood886/enfusion
+  omegahat/RDCOMClient
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true

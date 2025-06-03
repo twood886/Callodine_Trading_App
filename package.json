@@ -1,0 +1,37 @@
+{
+  "name": "CallodineTradingApp",
+  "version": "0.1.0",
+  "description": "Callodine Trading Application",
+  "main": "main.js",
+  "author" : "Taylor Wood",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^36.3.2",
+    "electron-builder": "^24.13.3"
+  },
+ "build": {
+    "appId": "com.callodine.tradingapp",
+    "directories": {
+      "output": "dist"
+    },
+    "asar": false,
+    "files": [
+      "main.js",
+      "app/**",
+      "main.R",
+      "rhino.yml",
+      "config.yml",
+      "DESCRIPTION"
+    ],
+    "extraResources": [
+      { "from": "R-Portable/", "to": "R-Portable/", "filter": ["**/*"] }
+    ],
+    "win": {
+      "target": "nsis",
+      "forceCodeSigning": false
+    }
+  }
+}

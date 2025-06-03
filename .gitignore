@@ -1,0 +1,16 @@
+.Rproj.user/
+.Rproj.user
+.Rhistory
+.RData
+*.Ruserdata
+.Rprofile
+.Renviron
+.Renviron.*
+node_modules
+
+renv/
+dist/
+build/
+out/
+R-Portable/
+node_modules/

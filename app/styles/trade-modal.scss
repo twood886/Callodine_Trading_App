@@ -1,0 +1,108 @@
+/* Overall Modal Styling & Font */
+.ui.modal.trade-modal {
+  font-family: Arial, Helvetica, sans-serif; /* A common sans-serif font */
+}
+
+.ui.modal.trade-modal > .header {
+  background-color: #f0f0f0 !important;
+  border-bottom: 1px solid #c5c5c5 !important;
+  font-size: 12px !important;
+  color: #333 !important;
+  padding: 1rem 1.5rem !important; // Standard semantic UI header padding
+}
+
+.ui.modal.trade-modal > .content {
+  background-color: #f0f0f0 !important; /* Main grey background for content area */
+  padding: 20px !important;             /* Give a bit more padding */
+  font-size: 10px;
+}
+
+.ui.modal.trade-modal .content label {
+  font-size: 13px;
+  color: #333;
+  margin-bottom: 0.5em; /* Add some space below labels */
+}
+
+/* Styling for "Content Buckets" (Grey Squares) */
+.ui.modal.trade-modal > .content .content-bucket,
+.ui.modal.trade-modal > .content div.ui.form { /* Targets div from uiOutput(ns("fields")) */
+  background-color: #e9e9e9 !important; /* Lighter grey for the buckets */
+  border: 1px solid #cccccc !important;
+  padding: 15px !important;
+  margin-bottom: 20px !important; /* Space between buckets */
+  border-radius: 3px !important;
+}
+
+/* Button Styling */
+/* General style for ALL buttons (content and footer) in this specific modal */
+.ui.modal.trade-modal .content .ui.button, // Targets buttons in content area
+.ui.modal.trade-modal .actions .ui.button  // Targets buttons in footer/actions area
+{
+  background-color: #ffffff !important;
+  color: #333333 !important;
+  border: 1px solid #cccccc !important;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1) !important;
+  font-size: 13px !important;
+  font-weight: normal !important; // Ensure text is not overly bold from Fomantic defaults
+}
+
+.ui.modal.trade-modal .content .ui.button:hover,
+.ui.modal.trade-modal .actions .ui.button:hover {
+  background-color: #f5f5f5 !important;
+  border-color: #b0b0b0 !important;
+  color: #222222 !important;
+}
+
+/* Explicit overrides for colored Fomantic buttons to make them white */
+/* This targets the "Create Trade" button (ui blue button) */
+.ui.modal.trade-modal .content .ui.blue.button {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+  border: 1px solid #cccccc !important;
+}
+.ui.modal.trade-modal .content .ui.blue.button:hover {
+  background-color: #f5f5f5 !important;
+  border-color: #b0b0b0 !important;
+  color: #222222 !important;
+}
+
+/* This targets the "Submit" button (ui primary button) in the footer */
+.ui.modal.trade-modal .actions .ui.primary.button {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+  border: 1px solid #cccccc !important;
+}
+.ui.modal.trade-modal .actions .ui.primary.button:hover {
+  background-color: #f5f5f5 !important;
+  border-color: #b0b0b0 !important;
+  color: #222222 !important;
+}
+
+/* This targets the "Cancel" button (ui cancel button) in the footer */
+.ui.modal.trade-modal .actions .ui.cancel.button { // Assuming it might have 'cancel' class
+  background-color: #ffffff !important;
+  color: #333333 !important;
+  border: 1px solid #cccccc !important;
+}
+.ui.modal.trade-modal .actions .ui.cancel.button:hover {
+  background-color: #f5f5f5 !important;
+  border-color: #b0b0b0 !important;
+  color: #222222 !important;
+}
+
+
+/* HR tag styling */
+.ui.modal.trade-modal hr {
+  border: none;
+  border-top: 1px solid #cccccc;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+/* Ensure inputs inside buckets have appropriate styling if needed */
+.content-bucket .ui.dropdown,
+div.ui.form .field input, /* More specific for inputs within the ui form bucket */
+.content-bucket .ui.multiple.radio {
+   font-size: 10px;
+}
+
