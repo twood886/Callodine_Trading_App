@@ -21,7 +21,7 @@ load_bamsf <- function() {
       "https://webservices.enfusionsystems.com/mobile/",
       "rest/reportservice/exportReport?",
       "name=shared%2FTaylor%2F",
-      "SMA_Mgr_Reports%2FBAMSF_Trade_Detail.orb"
+      "SMA_Mgr_Reports%2FBAMSF_Trade_Detail.trb"
     )
   )
 

@@ -6,24 +6,27 @@ const fs                     = require('fs');
 
 // Detect platform
 const isWin       = process.platform === 'win32';
-// __dirname is project root
+// __dirname is the folder where this file lives (your project root during dev)
 const projectRoot = __dirname;
 
 let resourcesPath;
-let rproc;  // Make R process reference global so we can kill it on exit
+let rproc;  // global reference to the R process so we can kill it on exit
 
 app.once('ready', () => {
+  // When packaged, `resourcesPath` = <install_dir>/resources
+  // In dev, `resourcesPath` = projectRoot
   resourcesPath = app.isPackaged
-    ? process.resourcesPath      // Packaged: <install_dir>/resources
-    : projectRoot;               // Dev: project root
+    ? process.resourcesPath
+    : projectRoot;
   console.log('◉ resourcesPath =', resourcesPath);
 });
 
 function startApp() {
-  // Locate R-Portable folder
+  // ─── 1. Locate R-Portable and Rscript.exe ─────────────────────────────────────
   const rPortableDir = app.isPackaged
     ? path.join(resourcesPath, 'R-Portable')
     : path.join(projectRoot, 'R-Portable');
+
   const rHome = path.join(rPortableDir, 'App', 'R-Portable');
   const rscriptPath = isWin
     ? path.join(rHome, 'bin', 'Rscript.exe')
@@ -32,8 +35,26 @@ function startApp() {
   console.log('◉ Looking for Rscript at:', rscriptPath);
   console.log('◉ Rscript exists?', fs.existsSync(rscriptPath));
 
-  // Build R expression: setwd into resources/app then launch Rhino
-  const appDir = path.join(resourcesPath, 'app').replace(/\\/g, '/');
+  // ─── 2. Decide where rhino.yml actually lives ─────────────────────────────────
+  //
+  // In dev mode:         rhino.yml is at projectRoot/rhino.yml
+  // Once packaged:       rhino.yml is at <resources>/app/rhino.yml
+  let configDir;
+  if (app.isPackaged) {
+    // packaged: resourcesPath points to <install_dir>/resources,
+    // and electron-builder copies your top-level files into <resources>/app
+    configDir = path.join(resourcesPath, 'app');
+  } else {
+    // dev: configDir is just projectRoot
+    configDir = projectRoot;
+  }
+  // Replace backslashes with forward slashes for R on Windows:
+  const appDir = configDir.replace(/\\/g, '/');
+
+  // Build the R expression:
+  //  1) setwd to configDir (so Rhino can find rhino.yml)
+  //  2) set Shiny to listen on 0.0.0.0:8000
+  //  3) run rhino::app()
   const expr = [
     `setwd("${appDir}")`,
     "options(shiny.port=8000,shiny.host='0.0.0.0',shiny.launch.browser=FALSE)",
@@ -41,17 +62,18 @@ function startApp() {
   ].join(';');
 
   const args = ['-e', expr];
+
+  // Ensure R_HOME is the portable R, and prepend R's bin folder to PATH:
   const childEnv = {
     ...process.env,
     R_HOME: rHome,
-    // Ensure R's DLLs and runtimes are found
-    PATH: `${path.join(rHome, 'bin')};${process.env.PATH}`
+    PATH:   `${path.join(rHome, 'bin')};${process.env.PATH}`
   };
 
-  // Spawn Rscript from its own home dir so DLLs load properly
+  // ─── 3. Spawn Rscript with cwd=rHome so it loads from R-Portable ─────────────────
   rproc = spawn(rscriptPath, args, {
-    cwd: rHome,
-    env: childEnv,
+    cwd:   rHome,
+    env:   childEnv,
     stdio: ['ignore', 'pipe', 'pipe'],
     shell: false
   });
@@ -67,26 +89,33 @@ let mainWin;
 function createWindow() {
   if (mainWin) return;
   mainWin = new BrowserWindow({
-    width: 800,
+    width:  800,
     height: 400,
     resizable: false,
-    webPreferences: { nodeIntegration: false, contextIsolation: true }
+    webPreferences: {
+      nodeIntegration:  false,
+      contextIsolation: true
+    }
   });
+
+  // Once Rhino/Shiny starts, it will be listening on port 8000
   mainWin.loadURL('http://localhost:8000/');
-    // Hide scrollbar via CSS injection
+  
+  // Optionally hide scrollbars via injected CSS
   mainWin.webContents.on('did-finish-load', () => {
     mainWin.webContents.insertCSS(`
       ::-webkit-scrollbar { display: none; }
       body { overflow: hidden !important; }
     `);
   });
+
   mainWin.on('closed', () => { mainWin = null; });
 }
 
 function watchAndLaunch() {
   startApp();
+
   let launched = false;
-  // Wait for Rhino/Shiny to signal readiness
   rproc.stdout.on('data', data => {
     const msg = data.toString();
     if (!launched && msg.includes('Listening on')) {
@@ -94,15 +123,22 @@ function watchAndLaunch() {
       launched = true;
     }
   });
-  // Fallback open after 10s
-  setTimeout(() => { if (!launched) createWindow(); }, 10000);
+
+  // Fallback: if Rhino didn’t print “Listening on …” within 10s, open the window anyway
+  setTimeout(() => {
+    if (!launched) createWindow();
+  }, 10_000);
 }
 
-// Always quit the app and kill R, even on Windows
+// Always kill the R process and quit when all windows are closed
 app.on('window-all-closed', () => {
   if (rproc) rproc.kill();
   app.quit();
 });
 
 app.whenReady().then(watchAndLaunch);
-app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) watchAndLaunch(); });
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    watchAndLaunch();
+  }
+});
