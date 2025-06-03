@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Callodine Trading Application",
   "main": "main.js",
-  "author" : "Taylor Wood",
+  "author": "Taylor Wood",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder"
@@ -12,8 +12,16 @@
     "electron": "^36.3.2",
     "electron-builder": "^24.13.3"
   },
- "build": {
+  "build": {
     "appId": "com.callodine.tradingapp",
+    "productName": "Callodine Trading App",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "twood886",
+        "repo": "Callodine_Trading_App"
+      }
+    ],
     "directories": {
       "output": "dist"
     },
@@ -27,11 +35,18 @@
       "DESCRIPTION"
     ],
     "extraResources": [
-      { "from": "R-Portable/", "to": "R-Portable/", "filter": ["**/*"] }
+      {
+        "from": "R-Portable/",
+        "to": "R-Portable/",
+        "filter": ["**/*"]
+      }
     ],
     "win": {
-      "target": "nsis",
+      "target": ["nsis", "zip"],
       "forceCodeSigning": false
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
   }
 }
