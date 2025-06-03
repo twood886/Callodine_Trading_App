@@ -121,6 +121,11 @@ function watchAndLaunch() {
     if (!launched && msg.includes('Listening on')) {
       createWindow();
       launched = true;
+
+      // ──────────────────────────────────────────────────────────────────────────
+      // Log the app’s version immediately after the window opens:
+      console.log('🔰 App version (from package.json):', app.getVersion());
+      // Then check for updates:
       autoUpdater.checkForUpdatesAndNotify();
     }
   });
@@ -129,6 +134,7 @@ function watchAndLaunch() {
   setTimeout(() => {
     if (!launched) {
       createWindow();
+      console.log('🔰 App version (from package.json):', app.getVersion());
       autoUpdater.checkForUpdatesAndNotify();
     }
   }, 10000);
