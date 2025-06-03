@@ -1,7 +1,6 @@
 // main.js for Callodine Trading Electron App
 // ────────────────────────────────────────────────────────────────────────────────
-// This version includes `electron-updater` so that a packaged app (e.g. v0.1.1)
-// will auto-check against your GitHub Releases and install v0.1.2 when available.
+// Includes `electron-updater` so a packaged app auto-checks against GitHub Releases
 // ────────────────────────────────────────────────────────────────────────────────
 
 const { app, BrowserWindow, dialog } = require('electron');
@@ -11,29 +10,27 @@ const path                           = require('path');
 const fs                             = require('fs');
 
 // Detect platform
-const isWin     = process.platform === 'win32';
-// __dirname is the folder where this file lives (project root during dev)
+const isWin      = process.platform === 'win32';
 const projectRoot = __dirname;
 
 let resourcesPath;
-let rproc;    // reference to the R process so we can kill it on exit
+let rproc;    // reference to the R process to kill on exit
 let mainWin;  // reference to the BrowserWindow
 
-// ────────────────────────────────────────────────────────────────────────────────
-// 1) When Electron is ready, determine resourcesPath (dev vs. packaged)
-// ────────────────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════════
+// 1) When Electron is ready, set resourcesPath (dev vs. packaged), then launch
+// ════════════════════════════════════════════════════════════════════════════════
 app.once('ready', () => {
   resourcesPath = app.isPackaged
-    ? process.resourcesPath    // when packaged: <install_dir>/resources
-    : projectRoot;             // in dev: the repo root
+    ? process.resourcesPath      // when packaged: <install_dir>/resources
+    : projectRoot;               // in dev: project root
   console.log('◉ resourcesPath =', resourcesPath);
 });
 
-// ────────────────────────────────────────────────────────────────────────────────
-// 2) Start R/ Rhino (Shiny) via R-Portable
-// ────────────────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════════
+// 2) R/ Rhino (Shiny) via R-Portable
+// ════════════════════════════════════════════════════════════════════════════════
 function startApp() {
-  // 2.1) Locate R-Portable and Rscript.exe
   const rPortableDir = app.isPackaged
     ? path.join(resourcesPath, 'R-Portable')
     : path.join(projectRoot, 'R-Portable');
@@ -46,19 +43,16 @@ function startApp() {
   console.log('◉ Looking for Rscript at:', rscriptPath);
   console.log('◉ Rscript exists?', fs.existsSync(rscriptPath));
 
-  // 2.2) Decide where rhino.yml lives (projectRoot in dev, resources/app when packaged)
   let configDir;
   if (app.isPackaged) {
-    // packaged: electron-builder copies top-level files (including rhino.yml) into <resources>/app
+    // packaged: top-level files (rhino.yml) copied into <resources>/app
     configDir = path.join(resourcesPath, 'app');
   } else {
-    // dev: rhino.yml is at projectRoot/rhino.yml
+    // dev: configDir is projectRoot where rhino.yml lives
     configDir = projectRoot;
   }
-  // Convert Windows backslashes to forward slashes for R
   const appDir = configDir.replace(/\\/g, '/');
 
-  // 2.3) Build the R expression: setwd(configDir); set shiny options; run rhino::app()
   const expr = [
     `setwd("${appDir}")`,
     "options(shiny.port=8000, shiny.host='0.0.0.0', shiny.launch.browser=FALSE)",
@@ -66,14 +60,12 @@ function startApp() {
   ].join(';');
   const args = ['-e', expr];
 
-  // 2.4) Ensure R_HOME points to the portable R and prepend its bin to PATH
   const childEnv = {
     ...process.env,
     R_HOME: rHome,
     PATH:   `${path.join(rHome, 'bin')};${process.env.PATH}`
   };
 
-  // 2.5) Spawn Rscript so Rhino can start Shiny
   rproc = spawn(rscriptPath, args, {
     cwd:   rHome,
     env:   childEnv,
@@ -88,9 +80,9 @@ function startApp() {
   return rproc;
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
-// 3) Create the Electron BrowserWindow (once Shiny is listening on port 8000)
-// ────────────────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════════
+// 3) Create the BrowserWindow after Shiny is listening on port 8000
+// ════════════════════════════════════════════════════════════════════════════════
 function createWindow() {
   if (mainWin) return;
 
@@ -105,8 +97,6 @@ function createWindow() {
   });
 
   mainWin.loadURL('http://localhost:8000/');
-
-  // Optional: hide scrollbars via injected CSS
   mainWin.webContents.on('did-finish-load', () => {
     mainWin.webContents.insertCSS(`
       ::-webkit-scrollbar { display: none; }
@@ -119,10 +109,9 @@ function createWindow() {
   });
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
-// 4) Watch for Rhino’s “Listening on” message, then open the window.
-//    Also set up auto‐update immediately after the window opens.
-// ────────────────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════════
+// 4) Start Rhino, wait for “Listening on”, then open Window & check for updates
+// ════════════════════════════════════════════════════════════════════════════════
 function watchAndLaunch() {
   startApp();
 
@@ -132,15 +121,11 @@ function watchAndLaunch() {
     if (!launched && msg.includes('Listening on')) {
       createWindow();
       launched = true;
-
-      // ──────────────────────────────────────────────────────────────────────────
-      // 4.1) Once the window is created, tell electron-updater to check GitHub
-      // ──────────────────────────────────────────────────────────────────────────
       autoUpdater.checkForUpdatesAndNotify();
     }
   });
 
-  // Fallback: if we don’t see “Listening on” within 10s, open the window anyway
+  // Fallback: after 10s, if still not launched, show window & check for updates
   setTimeout(() => {
     if (!launched) {
       createWindow();
@@ -149,9 +134,9 @@ function watchAndLaunch() {
   }, 10000);
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
-// 5) Register autoUpdater event listeners (optional but recommended for logging)
-// ────────────────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════════
+// 5) Auto‐Updater event handlers (for logging & install on download)
+// ════════════════════════════════════════════════════════════════════════════════
 autoUpdater.on('checking-for-update', () => {
   console.log('🔍 Checking for updates…');
 });
@@ -169,19 +154,16 @@ autoUpdater.on('download-progress', progress => {
 });
 autoUpdater.on('update-downloaded', info => {
   console.log('✅ Update downloaded:', info.version);
-  // Automatically quit & install. If you prefer to prompt the user first, you can
-  // show a dialog instead and call quitAndInstall() only when they click “Restart.”
-  autoUpdater.quitAndInstall(/* isSilent */ false, /* isForceRunAfter */ true);
+  autoUpdater.quitAndInstall(false, true);
 });
 
-// ────────────────────────────────────────────────────────────────────────────────
-// 6) Electron app lifecycle (quit & clean up R when windows close)
-// ────────────────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════════
+// 6) App lifecycle: kill R when windows close, launch on activate
+// ══════════════════════════════════════════════════════════════════════════════════
 app.on('window-all-closed', () => {
   if (rproc) rproc.kill();
   app.quit();
 });
-
 app.whenReady().then(watchAndLaunch);
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
