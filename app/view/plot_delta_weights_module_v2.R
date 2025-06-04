@@ -1,12 +1,13 @@
 box::use(
   dplyr[all_of, full_join, mutate],
+  htmltools[HTML, tagList],
   magrittr[`%>%`],
   plotly[add_lines, add_markers, add_segments, config, layout],
   plotly[plot_ly, plotlyOutput, renderPlotly],
   purrr[reduce],
   scales[percent],
   shiny[div, h4, moduleServer, NS, observeEvent, reactiveVal, renderUI],
-  shiny[req, selectInput, tagList, tags, uiOutput],
+  shiny[req, selectInput, tags, uiOutput],
   stats[setNames],
   tidyr[all_of, pivot_longer, replace_na],
 )

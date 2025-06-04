@@ -1,10 +1,10 @@
 box::use(
   DT[JS],
-  htmltools[HTML],
+  htmltools[HTML, tagList],
   magrittr[`%>%`],
   shiny.semantic[semantic_DT],
   shiny[actionButton, eventReactive, icon, isolate, moduleServer, NS],
-  shiny[renderUI, req, tagList, tags, textInput, uiOutput],
+  shiny[renderUI, req, tags, textInput, uiOutput],
   SMAManager[update_security_data],
 )
 

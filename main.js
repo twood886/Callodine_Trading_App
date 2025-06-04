@@ -2,12 +2,12 @@
 // ────────────────────────────────────────────────────────────────────────────────
 // Includes `electron-updater` so a packaged app auto-checks against GitHub Releases
 // ────────────────────────────────────────────────────────────────────────────────
-const log                            = require('electron-log');
-const { app, BrowserWindow, dialog } = require('electron');
-const { spawn }                      = require('child_process');
-const { autoUpdater }                = require('electron-updater');
-const path                           = require('path');
-const fs                             = require('fs');
+const log                             = require('electron-log');
+const { app, BrowserWindow, ipcMain } = require('electron');
+const { spawn }                       = require('child_process');
+const { autoUpdater }                 = require('electron-updater');
+const path                            = require('path');
+const fs                              = require('fs');
 
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
@@ -62,8 +62,8 @@ function startApp() {
     "options(shiny.port=8000, shiny.host='0.0.0.0', shiny.launch.browser=FALSE)",
     "rhino::app()"
   ].join(';');
-  const args = ['-e', expr];
 
+  const args = ['-e', expr];
   const childEnv = {
     ...process.env,
     R_HOME: rHome,
@@ -87,7 +87,7 @@ function startApp() {
 // ════════════════════════════════════════════════════════════════════════════════
 // 3) Create the BrowserWindow after Shiny is listening on port 8000
 // ════════════════════════════════════════════════════════════════════════════════
-function createWindow() {
+function createMainWindow() {
   if (mainWin) return;
 
   mainWin = new BrowserWindow({
@@ -95,6 +95,7 @@ function createWindow() {
     height:     400,
     resizable: false,
     webPreferences: {
+      preload: path.join(projectRoot, 'preload.js'),
       nodeIntegration:  false,
       contextIsolation: true
     }
@@ -127,7 +128,7 @@ function watchAndLaunch() {
       log.info('🔰 App opened at version ' + app.getVersion());
       // Then check for updates:
       autoUpdater.checkForUpdatesAndNotify();
-      createWindow();
+      createMainWindow();
       launched = true;
     }
   });
@@ -135,7 +136,7 @@ function watchAndLaunch() {
   // Fallback: after 10s, if still not launched, show window & check for updates
   setTimeout(() => {
     if (!launched) {
-      createWindow();
+      createMainWindow();
       console.log('🔰 App version (from package.json):', app.getVersion());
       autoUpdater.checkForUpdatesAndNotify();
     }
@@ -143,7 +144,32 @@ function watchAndLaunch() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
-// 5) Auto‐Updater event handlers (for logging & install on download)
+// 5) Handle the “open-plot-window” IPC message from the renderer
+// ════════════════════════════════════════════════════════════════════════════════
+ipcMain.on('open-plot-window', () => {
+  // Create a brand-new BrowserWindow (no parent, no modal)
+  const plotWin = new BrowserWindow({
+    width:  600,
+    height: 500,
+    resizable: true,
+    webPreferences: {
+      preload: path.join(projectRoot, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  // Load the Shiny URL with a query parameter so Shiny knows to show only plotWeightUI
+  // e.g. http://localhost:8000/?view=plotWeight
+  plotWin.loadURL('http://localhost:8000/?view=plotWeight');
+
+  plotWin.on('closed', () => {
+    // you could null out plotWin here if you stored it somewhere
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════════
+// 6) Auto‐Updater event handlers (for logging & install on download)
 // ════════════════════════════════════════════════════════════════════════════════
 autoUpdater.on('checking-for-update', () => {
   console.log('🔍 Checking for updates…');
