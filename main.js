@@ -8,6 +8,8 @@ const { spawn }                      = require('child_process');
 const { autoUpdater }                = require('electron-updater');
 const path                           = require('path');
 const fs                             = require('fs');
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
 
 // Detect platform
 const isWin      = process.platform === 'win32';
@@ -119,14 +121,12 @@ function watchAndLaunch() {
   rproc.stdout.on('data', data => {
     const msg = data.toString();
     if (!launched && msg.includes('Listening on')) {
-      createWindow();
-      launched = true;
-
-      // ──────────────────────────────────────────────────────────────────────────
       // Log the app’s version immediately after the window opens:
-      console.log('🔰 App version (from package.json):', app.getVersion());
+      log.info('🔰 App opened at version ' + app.getVersion());
       // Then check for updates:
       autoUpdater.checkForUpdatesAndNotify();
+      createWindow();
+      launched = true;
     }
   });
 
