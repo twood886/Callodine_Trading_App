@@ -122,12 +122,12 @@ function watchAndLaunch() {
 
   let launched = false;
   rproc.stdout.on('data', data => {
-    const msg = data.toString();
+    const msg = data.toString().trim();
+    console.log("[DEBUG R stdout] ", msg);
     if (!launched && msg.includes('Listening on')) {
-      // Log the app’s version immediately after the window opens:
       log.info('🔰 App opened at version ' + app.getVersion());
-      // Then check for updates:
       autoUpdater.checkForUpdatesAndNotify();
+      console.log("[DEBUG] Shiny says 'Listening on'. Creating main window now.");
       createMainWindow();
       launched = true;
     }
@@ -136,6 +136,7 @@ function watchAndLaunch() {
   // Fallback: after 10s, if still not launched, show window & check for updates
   setTimeout(() => {
     if (!launched) {
+      console.log("[DEBUG] 10s elapsed with no 'Listening on'. Creating main window anyway.");
       createMainWindow();
       console.log('🔰 App version (from package.json):', app.getVersion());
       autoUpdater.checkForUpdatesAndNotify();
@@ -150,7 +151,7 @@ ipcMain.on('open-plot-window', () => {
   // Create a brand-new BrowserWindow (no parent, no modal)
   const plotWin = new BrowserWindow({
     width:  600,
-    height: 500,
+    height: 600,
     resizable: true,
     webPreferences: {
       preload: path.join(projectRoot, 'preload.js'),

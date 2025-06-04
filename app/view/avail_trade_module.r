@@ -2,10 +2,12 @@ box::use(
   DT[JS],
   htmltools[HTML, tagList],
   magrittr[`%>%`],
+  Rblpapi[bdp, defaultConnection, blpConnect],
   shiny.semantic[semantic_DT],
-  shiny[actionButton, eventReactive, icon, isolate, moduleServer, NS],
+  shiny[actionButton, h4, eventReactive, icon, isolate, moduleServer, NS],
   shiny[renderUI, req, tags, textInput, uiOutput],
   SMAManager[update_security_data],
+  waiter[spin_loaders, transparent, waiter_hide, waiter_show],
 )
 
 box::use(
@@ -49,7 +51,10 @@ positionsModuleServer <- function(id) {
     allPositionsDF <- eventReactive(input$refresh, {
       message("--- POSITIONS MODULE: eventReactive input$refresh TRIGGERED ---") 
       #update_security_data()
-      current_bbid <- trimws(input$bbid)
+      con <- tryCatch(defaultConnection(), error = function(e) NULL)
+      if (is.null(con)) con <- blpConnect()
+
+      current_bbid <- tolower(bdp(input$bbid, "DX194")$DX194)
       req(current_bbid, message = "Bloomberg ID is required")
       message(paste(
         ">>> [positionsModule] Refresh triggered for BBID:",
@@ -76,6 +81,15 @@ positionsModuleServer <- function(id) {
       }
 
       rows <- lapply(pf_list, function(portfolio_obj) {
+        waiter_show(
+          html = tagList(
+            spin_loaders(id = 3, color = "#002D57"),
+            h4("Calculating ...", style = "color: #002D57;")
+          ),
+          color = transparent(0.7)
+        )
+        on.exit(waiter_hide())
+
         portfolio_obj$update_enfusion()
         pname <- "Unknown Portfolio" # Default name
         current_shares <- NA_real_
