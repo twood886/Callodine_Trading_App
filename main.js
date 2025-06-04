@@ -2,14 +2,16 @@
 // ────────────────────────────────────────────────────────────────────────────────
 // Includes `electron-updater` so a packaged app auto-checks against GitHub Releases
 // ────────────────────────────────────────────────────────────────────────────────
-
+const log                            = require('electron-log');
 const { app, BrowserWindow, dialog } = require('electron');
 const { spawn }                      = require('child_process');
 const { autoUpdater }                = require('electron-updater');
 const path                           = require('path');
 const fs                             = require('fs');
+
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
+autoUpdater.logger.transports.console.level = 'info';
 
 // Detect platform
 const isWin      = process.platform === 'win32';

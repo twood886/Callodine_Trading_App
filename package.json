@@ -13,8 +13,8 @@
     "electron-builder": "^24.13.3"
   },
   "dependencies": {
-    "electron-updater": "^6.6.2",
-    "electron-log": "^5.1.5"
+    "electron-log": "^5.4.0",
+    "electron-updater": "^6.6.2"
   },
   "build": {
     "appId": "com.callodine.tradingapp",
@@ -42,11 +42,16 @@
       {
         "from": "R-Portable/",
         "to": "R-Portable/",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
-      "target": ["nsis", "zip"],
+      "target": [
+        "nsis",
+        "zip"
+      ],
       "forceCodeSigning": false
     }
   }
