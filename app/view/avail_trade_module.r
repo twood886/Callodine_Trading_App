@@ -1,12 +1,12 @@
 box::use(
-  DT[JS],
+  DT[formatPercentage, formatRound],
   htmltools[HTML, tagList],
   magrittr[`%>%`],
   Rblpapi[bdp, defaultConnection, blpConnect],
   shiny.semantic[semantic_DT],
   shiny[actionButton, h4, eventReactive, icon, isolate, moduleServer, NS],
   shiny[renderUI, req, tags, textInput, uiOutput],
-  SMAManager[update_security_data],
+  SMAManager[.security, update_bloomberg_fields, update_security_data],
   waiter[spin_loaders, transparent, waiter_hide, waiter_show],
 )
 
@@ -49,8 +49,7 @@ positionsModuleServer <- function(id) {
     ns <- session$ns
 
     allPositionsDF <- eventReactive(input$refresh, {
-      message("--- POSITIONS MODULE: eventReactive input$refresh TRIGGERED ---") 
-      #update_security_data()
+      message("--- POSITIONS MODULE: eventReactive input$refresh TRIGGERED ---")
       con <- tryCatch(defaultConnection(), error = function(e) NULL)
       if (is.null(con)) con <- blpConnect()
 
@@ -60,7 +59,7 @@ positionsModuleServer <- function(id) {
         ">>> [positionsModule] Refresh triggered for BBID:",
         current_bbid
       ))
-
+      .security(current_bbid)
       pf_list <- portfolios()
 
       if (!is.list(pf_list) || length(pf_list) == 0) {
@@ -72,7 +71,8 @@ positionsModuleServer <- function(id) {
         return(
           data.frame(
             Portfolio = character(0),
-            Current = numeric(0),
+            CurrentShares = numeric(0),
+            Weight = numeric(0),
             MaxBuy = numeric(0),
             MaxSell = numeric(0),
             stringsAsFactors = FALSE
@@ -80,122 +80,142 @@ positionsModuleServer <- function(id) {
         )
       }
 
-      rows <- lapply(pf_list, function(portfolio_obj) {
-        waiter_show(
-          html = tagList(
-            spin_loaders(id = 3, color = "#002D57"),
-            h4("Calculating ...", style = "color: #002D57;")
-          ),
-          color = transparent(0.7)
-        )
-        on.exit(waiter_hide())
-
-        portfolio_obj$update_enfusion()
-        pname <- "Unknown Portfolio" # Default name
-        current_shares <- NA_real_
-        limits <- list(min = NA_real_, max = NA_real_)
-
-        # Safely get portfolio name
-        tryCatch({
-          pname_val <- portfolio_obj$get_short_name()
-          if (is.character(pname_val) && length(pname_val) == 1) {
-            pname <- pname_val
-          } else {
-            warning(paste(
-              "get_short_name for a portfolio did not return a single string. Using default name."
-            ))
-          }
-        }, error = function(e) {
-          warning(paste("Error getting short name for a portfolio:", e$message))
-        })
-
-        # Safely get current shares
-        tryCatch({
-          current_shares <- 0
-          cs <- portfolio_obj$get_target_position(current_bbid)$get_qty()
-          if (is.numeric(cs) && length(cs) == 1) {
-            current_shares <- cs
-          } else {
-            current_shares <- 0
-            warning(paste0(
-              "get_position for '",
-              pname,
-              "' (BBID: '", current_bbid, "') returned invalid data. Value: ",
-              paste(cs, collapse = ", ")
-            ))
-          }
-        }, error = function(e) {
-          current_shares <- 0
-          warning(paste0(
-            "Error calling get_position for '",
-            pname,
-            "' (BBID: '", current_bbid, "'): ",
-            e$message
-          ))
-        })
-
-        # Safely get security position limits
-        tryCatch({
-          lim <- portfolio_obj$get_security_position_limits(current_bbid)[[1]]
-          if (
-            is.list(lim) &&
-              all(c("min", "max") %in% names(lim)) &&
-              is.numeric(lim$min) && length(lim$min) == 1 &&
-              is.numeric(lim$max) && length(lim$max) == 1
-          ) {
-            limits <- lim
+      # Update Enfusion Data for each portfolio
+      lapply(
+        pf_list,
+        function(portfolio_obj) {
+          if (inherits(portfolio_obj, "Portfolio")) {
+            portfolio_obj$update_enfusion()
+            invisible(TRUE)
           } else {
             warning(paste0(
-              "get_security_position_limits for '",
-              pname,
-              "' (BBID: '", current_bbid, "') returned invalid data."
+              ">>> [positionsModule] ",
+              "Encountered non-Portfolio object in portfolios list. Skipping."
             ))
           }
-        }, error = function(e) {
-          warning(paste0(
-            "Error calling get_security_position_limits for '",
-            pname,
-            "' (BBID: '", current_bbid, "'): ",
-            e$message
-          ))
-        })
-
-        max_limit <- limits$max
-        min_limit <- limits$min
-
-        # Calculations, ensuring NAs propagate correctly
-        can_buy <- NA_real_
-        can_sell <- NA_real_
-        if (!is.na(max_limit) && !is.na(current_shares)) {
-          can_buy <- max(max_limit - current_shares, 0)
         }
-        if (!is.na(min_limit) && !is.na(current_shares)) {
-          can_sell <- min(-(current_shares - min_limit), 0)
-        }
+      )
 
-        data.frame(
-          Portfolio = pname,
-          Current = current_shares,
-          MaxBuy = can_buy,
-          MaxSell = can_sell,
-          stringsAsFactors = FALSE
-        )
-      })
+      # Get Portfolio Names
+      pname <- vapply(
+        pf_list,
+        function(portfolio) {
+          tryCatch({
+            portfolio$get_short_name()
+          }, error = function(e) {
+            warning(paste("Error getting short name for portfolio:", e$message))
+            "Unknown Portfolio"
+          })
+        },
+        character(1)
+      )
 
-      # Filter out any NULLs that might have resulted from invalid portfolio objects
-      valid_rows <- Filter(Negate(is.null), rows)
+      # Get Current Shares
+      current_shares <- vapply(
+        pf_list,
+        function(portfolio) {
+          tryCatch({
+            portfolio$get_target_position(current_bbid)$get_qty()
+          }, error = function(e) {
+            warning(paste0(
+              "Error getting current shares for portfolio: ", e$message
+            ))
+            0
+          })
+        },
+        numeric(1)
+      )
 
-      if (length(valid_rows) == 0) {
+      # Get Current Weights
+      current_weight <- vapply(
+        pf_list,
+        function(portfolio) {
+          tryCatch({
+            position <- portfolio$get_target_position(current_bbid)
+            position$get_delta_pct_nav()
+          }, error = function(e) {
+            warning(paste0(
+              "Error getting current weight for portfolio: ", e$message
+            ))
+            0
+          })
+        },
+        numeric(1)
+      )
+
+      # Get Security Position Limits
+      update_bloomberg_fields()
+      limits <- vapply(
+        pf_list,
+        function(portfolio) {
+          tryCatch({
+            limits <- portfolio$get_security_position_limits(current_bbid, update_bbfields = FALSE)[[1]] #nolint
+            if(
+              is.list(limits) &&
+              all(c("min", "max") %in% names(limits)) &&
+              is.numeric(limits$min) && length(limits$min) == 1 &&
+              is.numeric(limits$max) && length(limits$max) == 1
+            ) {
+              c("max" = limits$max, "min" = limits$min)
+            }else {
+              stop("Invalid limits structure")
+            }
+          }, error = function(e) {
+            warning(paste0(
+              "Error getting max shares for portfolio: ", e$message
+            ))
+            c("max" = NA_real_, "min" = NA_real_)
+          })
+        },
+        numeric(2)
+      )
+
+      max_limit <- limits["max", ]
+      min_limit <- limits["min", ]
+
+      can_buy <- mapply(
+        function(max_limit, current_shares) {
+          if (!is.na(max_limit) && !is.na(current_shares)) {
+            max(max_limit - current_shares, 0)
+          } else {
+            NA_real_
+          }
+        },
+        max_limit = max_limit,
+        current_shares = current_shares
+      )
+
+      can_sell <- mapply(
+        function(min_limit, current_shares) {
+          if (!is.na(min_limit) && !is.na(current_shares)) {
+            min(-(current_shares - min_limit), 0)
+          } else {
+            NA_real_
+          }
+        },
+        min_limit = min_limit,
+        current_shares = current_shares
+      )
+
+      df <- data.frame(
+        Portfolio = as.character(pname),
+        CurrentShares = as.numeric(current_shares),
+        Weight = as.numeric(current_weight),
+        MaxBuy = as.numeric(can_buy),
+        MaxSell = as.numeric(can_sell),
+        stringsAsFactors = FALSE
+      )
+
+      if (nrow(df) == 0) {
         message(">>> [positionsModule] No valid data rows to bind after processing portfolios.")
         df <- data.frame(
           Portfolio = character(0),
-          Current = numeric(0),
+          CurrentShares = numeric(0),
+          Weight = numeric(0),
           MaxBuy = numeric(0),
           MaxSell = numeric(0),
           stringsAsFactors = FALSE
         )
-      } else {
-        df <- do.call(rbind, valid_rows)
       }
 
       message(paste0(">>> [positionsModule] allPositionsDF() processed. Rows: ", nrow(df)))
@@ -241,40 +261,24 @@ positionsModuleServer <- function(id) {
       }
 
       message(paste0(">>> [positionsModule] Rendering semantic_DT with ", nrow(df_data), " rows."))
-
+      message("test updating")
       semantic_DT(
         df_data,
         options = list(
           dom       = "t",
           paging    = FALSE,
           searching = FALSE,
-          info      = FALSE,
-          columnDefs = list(
-            list(
-              # Suppose "Portfolio" is column 0, then
-              # "Current" is column 1, "MaxBuy" is 2, "MaxSell" is 3
-              targets = c(1, 2, 3),
-              render  = JS("
-                function(data, type, row, meta) {
-                  // If the cell is null/undefined, show blank
-                  if (data === null || data === undefined) {
-                    return '';
-                  }
-                  // If data is infinite, return the literal 'Inf' or '-Inf'
-                  if (!isFinite(data)) {
-                    return (data > 0 ? 'Inf' : '-Inf');
-                  }
-                  // Otherwise, format as a number with commas, 0 decimals
-                  return $.fn.dataTable.render
-                           .number(',', '', 0, '')
-                           .display(data);
-                }
-              ")
-            )
-          )
+          info      = FALSE
         )
+      ) %>%
+      formatPercentage(
+        columns = "Weight",
+        digits  = 2
+      ) %>%
+      formatRound(
+        columns = c("CurrentShares", "MaxBuy", "MaxSell"),
+        digits  = 0
       )
-
     })
   })
 }

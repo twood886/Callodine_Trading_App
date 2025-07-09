@@ -1,11 +1,10 @@
 box::use(
-  Rblpapi[blpConnect]
+  SMAManager[create_portfolio_from_enfusion],
 )
 
 #' @export
 load_ccmf <- function() {
-  blpConnect()
-  SMAManager::create_portfolio_from_enfusion(
+  create_portfolio_from_enfusion(
     long_name    = "Callodine Capital Master Fund",
     short_name   = "ccmf",
     holdings_url = paste0(

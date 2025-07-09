@@ -1,12 +1,10 @@
 box::use(
-  Rblpapi[bdp, blpConnect],
   SMAManager[.security, .sma_rule, create_sma_from_enfusion],
   stats[setNames],
 )
 
 #' @export
 load_bamsf <- function() {
-  blpConnect()
   bamsf <- create_sma_from_enfusion(
     long_name = "Blackstone Alternative Multi-Strategy Fund",
     short_name = "bamsf",
@@ -30,6 +28,7 @@ load_bamsf <- function() {
     sma_name = "bamsf",
     rule_name = "Position under 10% of NAV",
     scope = "position",
+    bbfields = c(NULL),
     definition = function(security_id, sma) {
       nav <- sma$get_nav()
       price <- vapply(security_id, \(id) .security(id)$get_price(), numeric(1))
@@ -44,9 +43,10 @@ load_bamsf <- function() {
     sma_name = "bamsf",
     rule_name = "Securities Related Issuer Positions under 8% of NAV",
     scope = "position",
+    bbfields = c(NULL),
     definition = function(security_id, sma) {
       nav <- sma$get_nav()
-      gics <- bdp(security_id, "DX203")$DX203
+      gics <- sapply(security_id, \(id) .security(id)$get_rule_data("DX203")) #nolint
       price <- vapply(security_id, \(id) .security(id)$get_price(), numeric(1))
       dplyr::case_when(
         gics == "4020" ~ price / nav,
@@ -62,9 +62,10 @@ load_bamsf <- function() {
     sma_name = "bamsf",
     rule_name = "Securities Related Issuer Positons under 0.5% of Shares Outstanding", #nolint
     scope = "position",
+    bbfields = c("DS381", "DX203"),
     definition = function(security_id, sma) {
-      shares_out <- bdp(security_id, "DS381")$DS381
-      gics <- bdp(security_id, "DX203")$DX203
+      shares_out <- sapply(security_id, \(id) .security(id)$get_rule_data("DS381")) #nolint
+      gics <- sapply(security_id, \(id) .security(id)$get_rule_data("DX203")) #nolint
       dplyr::case_when(
         gics == "4020" ~ 1 / shares_out,
         TRUE ~ 0
@@ -79,9 +80,10 @@ load_bamsf <- function() {
     sma_name = "bamsf",
     rule_name = "Positon under 1.5% of Shares Outstanding",
     scope = "position",
+    bbfields = c("DS381"),
     definition = function(security_id, sma) {
       sec_type <- vapply(security_id, \(id) .security(id)$get_instrument_type(), character(1)) #nolint
-      shares_out <- bdp(security_id, "DS381")$DS381
+      shares_out <- sapply(security_id, \(id) .security(id)$get_rule_data("DS381")) #nolint
       dplyr::case_when(
         sec_type == "Equity" ~ 1 / shares_out,
         TRUE ~ 0
@@ -94,29 +96,13 @@ load_bamsf <- function() {
 
   bamsf$add_rule(.sma_rule(
     sma_name = "bamsf",
-    rule_name = "No REITs",
-    scope = "position",
-    definition = function(security_id, sma) {
-      sec_type <- vapply(security_id, \(id) .security(id)$get_instrument_type(), character(1)) #nolint
-      reit <- bdp(security_id, "DX203")$DX203 == "6010"
-      dplyr::case_when(
-        sec_type == "Equity" & reit ~ 1,
-        TRUE ~ 0
-      )
-    },
-    swap_only = FALSE,
-    max_threshold = 0,
-    min_threshold = 0
-  ))
-
-  bamsf$add_rule(.sma_rule(
-    sma_name = "bamsf",
     rule_name = "Investment Company Positions under 1.5% of NAV",
     scope = "position",
+    bbfields = c("BI015"),
     definition = function(security_id, sma) {
       nav <- sma$get_nav()
       sec_type <- vapply(security_id, \(id) .security(id)$get_instrument_type(), character(1)) #nolint
-      bics_5 <- bdp(security_id, "BI015")$BI015
+      bics_5 <- sapply(security_id, \(id) .security(id)$get_rule_data("BI015"))
       price <- vapply(security_id, \(id) .security(id)$get_price(), numeric(1))
       dplyr::case_when(
         sec_type == "Fund" ~ price / nav,
@@ -133,10 +119,11 @@ load_bamsf <- function() {
     sma_name = "bamsf",
     rule_name = "Investment Company Positions under 0.5% Shares Outstanding", #nolint
     scope = "position",
+    bbfields = c("BI015", "DS381"),
     definition = function(security_id, sma) {
       sec_type <- vapply(security_id, \(id) .security(id)$get_instrument_type(), character(1)) #nolint
-      bics_5 <- bdp(security_id, "BI015")$BI015
-      shares_out <- bdp(security_id, "DS381")$DS381
+      bics_5 <- sapply(security_id, \(id) .security(id)$get_rule_data("BI015"))
+      shares_out <- sapply(security_id, \(id) .security(id)$get_rule_data("DS381")) #nolint
       dplyr::case_when(
         sec_type == "Fund" ~ 1 / shares_out,
         sec_type == "Equity" & bics_5 == "1411101011" ~ 1 / shares_out,
@@ -148,37 +135,15 @@ load_bamsf <- function() {
     min_threshold = -Inf
   ))
 
-
-  bamsf$add_rule(.sma_rule(
-    sma_name = "bamsf",
-    rule_name = "Total Securities Related Issuer Positions under 8% of NAV",
-    scope = "portfolio",
-    definition = function(security_id, portfolio) {
-      security <- lapply(security_id, \(id) .security(id))
-      type <- vapply(security, \(x) x$get_instrument_type(), character(1))
-      gics <- bdp(security_id, "DX203")$DX203
-      price <- vapply(security, \(x) x$get_price(), numeric(1))
-      underlying_price <- vapply(security, \(x) x$get_underlying_price(), numeric(1)) #nolint
-      price[type == "Option"] <- underlying_price[type == "Option"]
-      delta <- vapply(security, \(x) x$get_delta(), numeric(1))
-      nav <- portfolio$get_nav()
-      exp <- (delta * price) / nav
-      exp[gics != "4020"] <- 0
-      setNames(exp, security_id)
-    },
-    max_threshold = 0.08,
-    min_threshold = -Inf,
-    gross_exposure = FALSE
-  ))
-
   bamsf$add_rule(.sma_rule(
     sma_name = "bamsf",
     rule_name = "Total Investment Company Positions under 1.5% of NAV",
     scope = "portfolio",
+    bbfields = c("BI015"),
     definition = function(security_id, portfolio) {
       security <- lapply(security_id, \(id) .security(id))
       type <- vapply(security, \(x) x$get_instrument_type(), character(1))
-      bics_5 <- bdp(security_id, "BI015")$BI015
+      bics_5 <- sapply(security_id, \(id) .security(id)$get_rule_data("BI015"))
       price <- vapply(security, \(x) x$get_price(), numeric(1))
       underlying_price <- vapply(security, \(x) x$get_underlying_price(), numeric(1)) #nolint
       price[type == "Option"] <- underlying_price[type == "Option"]
@@ -290,6 +255,7 @@ load_bamsf <- function() {
           sma_name = "bamsf",
           rule_name = paste0(x[2], " ", as.numeric(x[3]) * 100, "% Net Exp"),
           scope = "portfolio",
+          bbfields = c(NULL),
           definition = function(security_id, portfolio) {
             .bics_rule(security_id, portfolio, x[1])
           },
@@ -301,4 +267,6 @@ load_bamsf <- function() {
       invisible(TRUE)
     }
   )
+
+  invisible(bamsf)
 }
