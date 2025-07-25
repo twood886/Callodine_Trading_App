@@ -271,14 +271,14 @@ positionsModuleServer <- function(id) {
           info      = FALSE
         )
       ) %>%
-      formatPercentage(
-        columns = "Weight",
-        digits  = 2
-      ) %>%
-      formatRound(
-        columns = c("CurrentShares", "MaxBuy", "MaxSell"),
-        digits  = 0
-      )
+        formatPercentage(
+          columns = "Weight",
+          digits  = 2
+        ) %>%
+        formatRound(
+          columns = c("CurrentShares", "MaxBuy", "MaxSell"),
+          digits  = 0
+        )
     })
   })
 }

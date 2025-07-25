@@ -169,6 +169,26 @@ ipcMain.on('open-plot-window', () => {
   });
 });
 
+ipcMain.on('open-rebal-window', () => {
+  const rebalWin = new BrowserWindow({
+    width:      800,
+    height:     600,
+    resizable:  true,
+    webPreferences: {
+      preload: path.join(projectRoot, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  // tell Shiny to render only your rebalModalUI
+  rebalWin.loadURL('http://localhost:8000/?view=rebal');
+
+  rebalWin.on('closed', () => {
+    // if you want to track it: rebalWin = null
+  });
+});
+
 // ════════════════════════════════════════════════════════════════════════════════
 // 6) Auto‐Updater event handlers (for logging & install on download)
 // ════════════════════════════════════════════════════════════════════════════════

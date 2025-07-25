@@ -18,8 +18,9 @@ box::use(
   app/logic/portfolios/ccmf[load_ccmf],
   app/logic/portfolios/fmap[load_fmap],
   app/logic/utils[loading_screen, waiter_on_load],
-  app/view/plot_delta_weights_module_v2[plotWeightUI, plotWeightServer],
-  app/view/avail_trade_module[positionsModuleUI, positionsModuleServer]
+  app/view/avail_trade_module[positionsModuleServer, positionsModuleUI],
+  app/view/modal_rebal_module[rebalModalServer, rebalModalUI],
+  app/view/plot_delta_weights_module_v2[plotWeightServer, plotWeightUI],
 )
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -37,6 +38,11 @@ ui <- function(request) {
             window.electronAPI.openPlotWindow();
           }
         });
+        Shiny.addCustomMessageHandler('open-rebal-window', function(message) {
+          if (window.electronAPI && window.electronAPI.openRebalWindow) {
+            window.electronAPI.openRebalWindow();
+          }
+        });
       "))
     ),
     uiOutput("page_ui")
@@ -50,15 +56,11 @@ server <- function(input, output, session) {
   # “main‐or‐plot” is determined reactively. Wrap in observe so `url_search` is accessed
   observe({
     qs0 <- parseQueryString(session$clientData$url_search)
-    isPlot <- !is.null(qs0$view) && identical(qs0$view, "plotWeight")
-    if (!isPlot) {
-      # We are in the *main* window (no ?view=plotWeight), so when it closes, stopApp()
+    isChild <- !is.null(qs0$view) && qs0$view %in% c("plotWeight", "rebal")
+    if (!isChild) {
       session$onSessionEnded(function() {
         stopApp()
       })
-    } else {
-      # If we're in the plot window, do NOT register stopApp()
-      # (so closing plot window does NOT kill the main Shiny process)
     }
   })
 
@@ -68,16 +70,19 @@ server <- function(input, output, session) {
     if (!is.null(qs$view) && identical(qs$view, "plotWeight")) {
       # ───── PLOT‐ONLY VIEW ─────
       ns <- session$ns
-      fluidPage(
-        plotWeightUI(ns("plot"))
-      )
+      fluidPage(plotWeightUI(ns("plot")))
+    } else if (!is.null(qs$view) && identical(qs$view, "rebal")) {
+      # ───── REBALANCE MODAL VIEW ─────
+      ns <- session$ns
+      fluidPage(rebalModalUI(ns("rebal")))
     } else {
       # ───── MAIN VIEW ─────
       ns <- session$ns
       fluidPage(
         tags$div(
           style = "margin: 12px 0;",
-          actionButton(ns("openPlotBtn"), "Open Delta Weights in New Window")
+          actionButton(ns("openPlotBtn"), "Open Delta Weights in New Window"),
+          actionButton(ns("openRebalBtn"), "Open Rebalance Window")
         ),
         positionsModuleUI(ns("posMod"))
       )
@@ -91,6 +96,9 @@ server <- function(input, output, session) {
       # Plot window: run plotWeight server only
       plotWeightServer("plot")
       waiter_hide()
+    } else if (!is.null(qs$view) && identical(qs$view, "rebal")) {
+      rebalModalServer("rebal")
+      waiter_hide()
     } else {
       # Main window: run positions server and listen for openPlot button
       load_ccmf()
@@ -101,6 +109,9 @@ server <- function(input, output, session) {
       waiter_hide()
       observeEvent(input$openPlotBtn, {
         session$sendCustomMessage(type = "open-plot-window", message = list())
+      })
+      observeEvent(input$openRebalBtn, {
+        session$sendCustomMessage(type = "open-rebal-window", message = list())
       })
     }
   })
