@@ -15,6 +15,7 @@ box::use(
 box::use(
   app/logic/portfolios/bamsf[load_bamsf],
   app/logic/portfolios/bemap[load_bemap],
+  app/logic/portfolios/cat[load_caty],
   app/logic/portfolios/ccmf[load_ccmf],
   app/logic/portfolios/fmap[load_fmap],
   app/logic/utils[loading_screen, waiter_on_load],
@@ -105,6 +106,7 @@ server <- function(input, output, session) {
       load_bamsf()
       load_bemap()
       load_fmap()
+      load_caty()
       positionsModuleServer("posMod")
       waiter_hide()
       observeEvent(input$openPlotBtn, {
