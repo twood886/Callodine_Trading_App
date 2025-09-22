@@ -13,16 +13,9 @@ load_bamsf <- function() {
       "https://webservices.enfusionsystems.com/mobile",
       "/rest/reportservice/exportReport?",
       "name=shared%2FTaylor%2FSMA_Mgr_Reports%2F",
-      "BAMSF+Consolidated+Position+Listing+-+Options.ppr"
-    ),
-    trade_url = paste0(
-      "https://webservices.enfusionsystems.com/mobile/",
-      "rest/reportservice/exportReport?",
-      "name=shared%2FTaylor%2F",
-      "SMA_Mgr_Reports%2FBAMSF_Trade_Detail.trb"
+      "BAMSF+-+Positions.ppr"
     )
   )
-
 
   bamsf$add_rule(.sma_rule(
     sma_name = "bamsf",
@@ -164,8 +157,8 @@ load_bamsf <- function() {
   .bics_rule <- function(security_id, portfolio, tgt_bics = NULL) {
     security <- lapply(security_id, \(id) .security(id))
     type <- vapply(security, \(x) x$get_instrument_type(), character(1))
-    bics_lvl2 <- vapply(security, \(x) x$get_bics_level_2(), character(1))
-    bics_lvl3 <- vapply(security, \(x) x$get_bics_level_3(), character(1))
+    bics_lvl2 <- sapply(security_id, \(id) .security(id)$get_rule_data("BI012"))
+    bics_lvl3 <- sapply(security_id, \(id) .security(id)$get_rule_data("BI013"))
     bics <- bics_lvl3
     bics[type == "FixedIncome"] <- bics_lvl2[type == "FixedIncome"]
     price <- vapply(security, \(x) x$get_price(), numeric(1))
@@ -255,7 +248,7 @@ load_bamsf <- function() {
           sma_name = "bamsf",
           rule_name = paste0(x[2], " ", as.numeric(x[3]) * 100, "% Net Exp"),
           scope = "portfolio",
-          bbfields = c(NULL),
+          bbfields = c("BI012", "BI013"),
           definition = function(security_id, portfolio) {
             .bics_rule(security_id, portfolio, x[1])
           },

@@ -18,6 +18,7 @@ box::use(
   app/logic/portfolios/cat[load_caty],
   app/logic/portfolios/ccmf[load_ccmf],
   app/logic/portfolios/fmap[load_fmap],
+  app/logic/portfolios/qube[load_qsma],
   app/logic/utils[loading_screen, waiter_on_load],
   app/view/avail_trade_module[positionsModuleServer, positionsModuleUI],
   app/view/modal_rebal_module[rebalModalServer, rebalModalUI],
@@ -107,6 +108,7 @@ server <- function(input, output, session) {
       load_bemap()
       load_fmap()
       load_caty()
+      load_qsma()
       positionsModuleServer("posMod")
       waiter_hide()
       observeEvent(input$openPlotBtn, {

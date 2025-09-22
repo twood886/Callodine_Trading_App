@@ -115,7 +115,7 @@ positionsModuleServer <- function(id) {
         pf_list,
         function(portfolio) {
           tryCatch({
-            portfolio$get_target_position(current_bbid)$get_qty()
+            portfolio$get_position(current_bbid)$get_qty()
           }, error = function(e) {
             warning(paste0(
               "Error getting current shares for portfolio: ", e$message
@@ -131,7 +131,7 @@ positionsModuleServer <- function(id) {
         pf_list,
         function(portfolio) {
           tryCatch({
-            position <- portfolio$get_target_position(current_bbid)
+            position <- portfolio$get_position(current_bbid)
             position$get_delta_pct_nav()
           }, error = function(e) {
             warning(paste0(

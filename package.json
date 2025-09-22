@@ -1,11 +1,12 @@
 {
   "name": "CallodineTradingApp",
-  "version": "0.1.5",
+  "version": "0.1.7",
   "description": "Callodine Trading Application",
   "main": "main.js",
   "author": "Taylor Wood",
   "scripts": {
     "start": "electron .",
+    "predist": "R-Portable/App/R-Portable/bin/Rscript.exe -e \"if (!requireNamespace('renv', quietly=TRUE)) install.packages('renv', repos='https://cloud.r-project.org'); renv::consent(provided=TRUE); renv::restore(library=normalizePath('R-Portable/App/R-Portable/library', winslash='/'), prompt=FALSE)\"",
     "dist": "electron-builder"
   },
   "devDependencies": {

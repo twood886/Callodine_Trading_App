@@ -28,8 +28,8 @@ Imports:
     tidyr,
     config
 Remotes:
-  twood886/SMA_Manager
-  twood886/enfusion
+  twood886/SMA_Manager,
+  twood886/enfusion,
   omegahat/RDCOMClient
 License: MIT + file LICENSE
 Encoding: UTF-8

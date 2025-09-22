@@ -92,8 +92,8 @@ function createMainWindow() {
 
   mainWin = new BrowserWindow({
     width:      800,
-    height:     400,
-    resizable: false,
+    height:     600,
+    resizable: true,
     webPreferences: {
       preload: path.join(projectRoot, 'preload.js'),
       nodeIntegration:  false,
