@@ -71,7 +71,7 @@ plotWeightServer <- function(id) {
     get_weights_df <- function(portfolio_name) {
       get_delta_weights <- function(portfolio) {
         sapply(
-          portfolio$get_target_position(),
+          portfolio$get_position(),
           function(pos) setNames(pos$get_delta_pct_nav(), pos$get_id())
         )
       }
