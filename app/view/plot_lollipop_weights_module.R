@@ -5,7 +5,6 @@ box::use(
   scales[percent],
   shiny[moduleServer, NS, req, tagList],
   shiny.semantic[selectInput],
-  stats[setNames],
   tidyr[all_of, pivot_longer, replace_na],
 )
 
@@ -37,7 +36,11 @@ lollipopWeightServer <- function(id) {
       get_delta_weights <- function(portfolio) {
         sapply(
           portfolio$get_target_position(),
-          function(pos) setNames(pos$get_delta_pct_nav(), pos$get_id())
+          function(pos) {
+            d_w <- pos$get_delta_pct_nav()
+            names(d_w) <- pos$get_id()
+            d_w
+          }
         )
       }
 

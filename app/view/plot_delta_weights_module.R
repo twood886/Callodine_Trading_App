@@ -4,7 +4,6 @@ box::use(
   purrr[reduce],
   scales[percent],
   shiny[moduleServer, NS, req, selectInput, tagList],
-  stats[setNames],
   tidyr[all_of, pivot_longer, replace_na],
 )
 box::use(app/logic/trade_trigger[tradeTrigger])
@@ -33,7 +32,11 @@ plotWeightServer <- function(id) {
       get_delta_weights <- function(portfolio) {
         sapply(
           portfolio$get_target_position(),
-          function(pos) setNames(pos$get_delta_pct_nav(), pos$get_id())
+          function(pos) {
+            d_w <- pos$get_delta_pct_nav()
+            names(d_w) <- pos$get_id()
+            d_w
+          }
         )
       }
 

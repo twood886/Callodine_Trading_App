@@ -1,6 +1,5 @@
 box::use(
-  SMAManager[registries],
-  stats[setNames],
+  SMAManager[registries]
 )
 
 #' @export
@@ -15,7 +14,8 @@ portfolios <- function() {
     portfolio_ids,
     \(x) get(x, envir = registries$portfolios)
   )
-  setNames(portfolios, portfolio_ids)
+  names(portfolios) <- portfolio_ids
+  portfolios
 }
 
 #' @export
@@ -27,7 +27,7 @@ derived_portfolios <- function() {
 
 #' @export
 derived_portfolio_ids <- function() {
-  setNames(sapply(derived_portfolios(), \(x) x$get_short_name()), NULL)
+  vapply(derived_portfolios(), \(x) x$get_short_name(), character(1))
 }
 
 #' @export
@@ -39,5 +39,7 @@ base_portfolios <- function() {
 
 #' @export
 base_portfolio_ids <- function() {
-  setNames(sapply(base_portfolios(), \(x) x$get_short_name()), NULL)
+  ids <- sapply(base_portfolios(), \(x) x$get_id())
+  names(ids) <- NULL
+  ids
 }

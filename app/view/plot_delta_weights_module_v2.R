@@ -8,7 +8,6 @@ box::use(
   scales[percent],
   shiny[div, h4, moduleServer, NS, observeEvent, reactiveVal, renderUI],
   shiny[req, selectInput, tags, uiOutput],
-  stats[setNames],
   tidyr[all_of, pivot_longer, replace_na],
 )
 
@@ -70,10 +69,10 @@ plotWeightServer <- function(id) {
     # Compute weights_df once
     get_weights_df <- function(portfolio_name) {
       get_delta_weights <- function(portfolio) {
-        sapply(
-          portfolio$get_position(),
-          function(pos) setNames(pos$get_delta_pct_nav(), pos$get_id())
-        )
+        d_w <- sapply(portfolio$get_position(), \(p) p$get_delta_pct_nav())
+        ids <- sapply(portfolio$get_position(), \(p) p$get_id())
+        names(d_w) <- ids
+        d_w
       }
       to_df <- function(x) {
         data.frame(
