@@ -3,8 +3,8 @@ box::use(
   shiny.semantic[create_modal, modal,  remove_all_modals],
   shiny[h2, h4, icon, moduleServer, NS, observeEvent, reactiveVal, renderUI],
   shiny[req, tagList, tags, uiOutput],
-  SMAManager[create_proposed_trade_qty, create_proposed_trade_tgt_weight, proposed_to_trade],
-  SMAManager[registries],
+  replikit[create_proposed_trade_qty, create_proposed_trade_tgt_weight, proposed_to_trade],
+  replikit[registries],
   waiter[spin_loaders, transparent, waiter_hide, waiter_show],
 )
 

@@ -15,7 +15,7 @@ ui <- function(id) {
 server <- function(id, portfolio_name) {
   moduleServer(id, function(input, output, session) {
     output$count <- renderText({
-      portfolio <- SMAManager::.portfolio(portfolio_name, create = FALSE)
+      portfolio <- replikit::.portfolio(portfolio_name, create = FALSE)
       length(portfolio$get_position())
     })
   })

@@ -49,9 +49,9 @@ plotWeightServer <- function(id) {
         )
       }
 
-      base <- SMAManager::.portfolio(portfolio_name, create = FALSE)
+      base <- replikit::.portfolio(portfolio_name, create = FALSE)
       base_name <- base$get_short_name()
-      smas <- SMAManager::get_tracking_smas(base)
+      smas <- replikit::get_tracking_smas(base)
       if (is.null(smas)) stop("No tracking SMAs found.")
 
       sma_names <- unname(vapply(smas, \(x) x$get_short_name(), character(1)))

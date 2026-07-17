@@ -5,7 +5,7 @@ box::use(
   jsonlite[toJSON],
   DT[renderDataTable, JS],
   shiny.semantic[semantic_DT, semantic_DTOutput],
-  SMAManager[registries],
+  replikit[registries],
   app/logic/trade_trigger[tradeTrigger]
 )
 

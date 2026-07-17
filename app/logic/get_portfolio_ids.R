@@ -1,5 +1,5 @@
 box::use(
-  SMAManager[registries]
+  replikit[registries]
 )
 
 #' @export

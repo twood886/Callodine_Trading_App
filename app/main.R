@@ -2,7 +2,7 @@
 
 cat(">>>> APP/MAIN.R is now running (with conditional stopApp) <<<<\n")
 
-library(SMAManager)   # ensure positionsModuleUI & plotWeightUI are available
+library(replikit)   # ensure positionsModuleUI & plotWeightUI are available
 box::use(
   shiny[fluidPage, NS, observe, renderUI, tagList, uiOutput],
   shiny[parseQueryString, actionButton, tags, stopApp, shinyApp],

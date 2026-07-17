@@ -4,7 +4,7 @@ box::use(
   shiny.semantic[semantic_DT],
   shiny[div, eventReactive, h4, moduleServer],
   shiny[NS, renderUI, req, selectInput, tagList, tags, uiOutput],
-  SMAManager[.portfolio],
+  replikit[.portfolio],
   waiter[spin_loaders, transparent, waiter_hide, waiter_show],
 )
 

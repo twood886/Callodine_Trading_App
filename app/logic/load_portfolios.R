@@ -1,7 +1,7 @@
 box::use(
   Rblpapi[blpConnect, defaultConnection],
-  SMAManager[BloombergDataProvider, set_security_data_provider],
-  SMAManagerData[db_connect, get_db_connection, load_all_portfolios_from_db],
+  replikit[BloombergDataProvider, set_security_data_provider],
+  replikitdata[db_connect, get_db_connection, load_all_portfolios_from_db],
 )
 
 #' Load every portfolio and SMA (with rules and holdings) from the database.

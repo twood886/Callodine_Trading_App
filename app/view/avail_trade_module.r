@@ -6,7 +6,7 @@ box::use(
   shiny.semantic[semantic_DT],
   shiny[actionButton, h4, eventReactive, icon, isolate, moduleServer, NS],
   shiny[renderUI, req, tags, textInput, uiOutput],
-  SMAManager[.security, update_bloomberg_fields, update_security_data],
+  replikit[.security, update_bloomberg_fields, update_security_data],
   waiter[spin_loaders, transparent, waiter_hide, waiter_show],
 )
 
