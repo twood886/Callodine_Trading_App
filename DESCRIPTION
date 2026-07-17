@@ -18,6 +18,7 @@ Imports:
     shiny.semantic,
     shinyjs,
     SMAManager,
+    SMAManagerData,
     waiter,
     dplyr,
     magrittr,
@@ -29,6 +30,7 @@ Imports:
     config
 Remotes:
   twood886/SMA_Manager,
+  twood886/SMAManagerData,
   twood886/enfusion,
   omegahat/RDCOMClient
 License: MIT + file LICENSE
